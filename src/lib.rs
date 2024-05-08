@@ -27,6 +27,24 @@ impl<'lt, M, D> Mbuf<'lt, M, D> {
     }
 }
 
+impl<'lt, M, D> Mbuf<'lt, M, D> {
+    pub unsafe fn at_ptr(pointer: *const u8) -> &'lt Self {
+        &*(pointer as *const Mbuf<'lt, M, D>)
+    }
+
+    pub unsafe fn at_ptr_mut(pointer: *mut u8) -> &'lt mut Self {
+        &mut *(pointer as *mut Mbuf<'lt, M, D>)
+    }
+
+    pub unsafe fn at_offset(pointer: *const u8, offset: usize) -> &'lt Self {
+        &*((pointer.add(offset)) as *const Mbuf<'lt, M, D>)
+    }
+
+    pub unsafe fn at_offset_mut(pointer: *mut u8, offset: usize) -> &'lt mut Self {
+        &mut *((pointer.add(offset)) as *mut Mbuf<'lt, M, D>)
+    }
+}
+
 impl<'lt, M, D> std::ops::Deref for Mbuf<'lt, M, D> {
     type Target = [D];
 
