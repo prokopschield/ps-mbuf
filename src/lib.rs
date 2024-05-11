@@ -45,6 +45,40 @@ impl<'lt, M, D> Mbuf<'lt, M, D> {
     }
 }
 
+impl<'lt, M, D: Copy> Mbuf<'lt, M, D> {
+    pub unsafe fn write_to_ptr(pointer: *mut u8, metadata: M, data: &[D]) -> &'lt Self {
+        Mbuf::write_to_ptr_mut(pointer, metadata, data)
+    }
+
+    pub unsafe fn write_to_ptr_mut(pointer: *mut u8, metadata: M, data: &[D]) -> &'lt mut Self {
+        let mbuf = Mbuf::at_ptr_mut(pointer);
+
+        mbuf.metadata = metadata;
+        mbuf.length = data.len();
+        mbuf.copy_from_slice(data);
+
+        return mbuf;
+    }
+
+    pub unsafe fn write_to_offset(
+        pointer: *mut u8,
+        offset: usize,
+        metadata: M,
+        data: &[D],
+    ) -> &'lt Self {
+        Mbuf::write_to_offset_mut(pointer, offset, metadata, data)
+    }
+
+    pub unsafe fn write_to_offset_mut(
+        pointer: *mut u8,
+        offset: usize,
+        metadata: M,
+        data: &[D],
+    ) -> &'lt mut Self {
+        Mbuf::write_to_ptr_mut(pointer.add(offset), metadata, data)
+    }
+}
+
 impl<'lt, M, D> std::ops::Deref for Mbuf<'lt, M, D> {
     type Target = [D];
 
