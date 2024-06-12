@@ -43,6 +43,16 @@ impl<'lt, M, D> Mbuf<'lt, M, D> {
     pub unsafe fn at_offset_mut(pointer: *mut u8, offset: usize) -> &'lt mut Self {
         &mut *((pointer.add(offset)) as *mut Mbuf<'lt, M, D>)
     }
+
+    /// declares a memory buffer **without data initialization -- items must be initialized by caller**
+    pub unsafe fn init_at_ptr(pointer: *mut u8, metadata: M, length: usize) -> &'lt mut Self {
+        let mbuf = Mbuf::at_ptr_mut(pointer);
+
+        mbuf.metadata = metadata;
+        mbuf.length = length;
+
+        return mbuf;
+    }
 }
 
 impl<'lt, M, D: Copy> Mbuf<'lt, M, D> {
@@ -51,10 +61,8 @@ impl<'lt, M, D: Copy> Mbuf<'lt, M, D> {
     }
 
     pub unsafe fn write_to_ptr_mut(pointer: *mut u8, metadata: M, data: &[D]) -> &'lt mut Self {
-        let mbuf = Mbuf::at_ptr_mut(pointer);
+        let mbuf = Mbuf::init_at_ptr(pointer, metadata, data.len());
 
-        mbuf.metadata = metadata;
-        mbuf.length = data.len();
         mbuf.copy_from_slice(data);
 
         return mbuf;
