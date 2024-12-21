@@ -7,7 +7,7 @@ pub struct Mbuf<'lt, M, D> {
 
 impl<'lt, M, D> Mbuf<'lt, M, D> {
     pub fn to_slice(&self) -> &[D] {
-        &*self
+        self
     }
 
     pub fn to_slice_mut(&mut self) -> &mut [D] {
@@ -51,7 +51,7 @@ impl<'lt, M, D> Mbuf<'lt, M, D> {
         mbuf.metadata = metadata;
         mbuf.length = length;
 
-        return mbuf;
+        mbuf
     }
 }
 
@@ -65,7 +65,7 @@ impl<'lt, M, D: Copy> Mbuf<'lt, M, D> {
 
         mbuf.copy_from_slice(data);
 
-        return mbuf;
+        mbuf
     }
 
     pub unsafe fn write_to_offset(
