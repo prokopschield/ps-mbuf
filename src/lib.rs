@@ -32,23 +32,40 @@ impl<'lt, M, D> Mbuf<'lt, M, D> {
 }
 
 impl<'lt, M, D> Mbuf<'lt, M, D> {
+    /// Declares an Mbuf begins at a given pointer
+    /// # Safety
+    /// Safe only if the pointer points to a valid Mbuf<'lt, M, D>.
     pub unsafe fn at_ptr(pointer: *const u8) -> &'lt Self {
         &*(pointer as *const Mbuf<'lt, M, D>)
     }
 
+    /// Declares a mutable Mbuf begins at a given pointer
+    /// # Safety
+    /// Safe only if the pointer points to a valid Mbuf<'lt, M, D> in writable memory.
     pub unsafe fn at_ptr_mut(pointer: *mut u8) -> &'lt mut Self {
         &mut *(pointer as *mut Mbuf<'lt, M, D>)
     }
 
+    /// Declares an Mbuf begins at a given byte offset from a given pointer
+    /// # Safety
+    /// Safe only if the the region at (pointer + offset) contains a valid Mbuf<'lt, M, D>.
     pub unsafe fn at_offset(pointer: *const u8, offset: usize) -> &'lt Self {
         &*((pointer.add(offset)) as *const Mbuf<'lt, M, D>)
     }
 
+    /// Declares a mutable Mbuf begins at a given byte offset from a given pointer
+    /// # Safety
+    /// Safe only if the the region at (pointer + offset) contains a valid Mbuf<'lt, M, D> in writable memory.
     pub unsafe fn at_offset_mut(pointer: *mut u8, offset: usize) -> &'lt mut Self {
         &mut *((pointer.add(offset)) as *mut Mbuf<'lt, M, D>)
     }
 
     /// declares a memory buffer **without data initialization -- items must be initialized by caller**
+    /// # Safety
+    /// Safe if the memory region pointed to is large enough to hold an Mbuf<'lt, M, D> and is writable.
+    /// <br>**Calling this function does not initialize data values in the Mbuf.**
+    /// <br>**Dropping uninitialized data values may be undefined behaviour.**
+    /// <br>Don't do this unless you know what you're doing.
     pub unsafe fn init_at_ptr(pointer: *mut u8, metadata: M, length: usize) -> &'lt mut Self {
         let mbuf = Mbuf::at_ptr_mut(pointer);
 
