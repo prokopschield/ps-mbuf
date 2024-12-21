@@ -87,6 +87,18 @@ impl<'lt, M, D: Copy> Mbuf<'lt, M, D> {
     }
 }
 
+impl<'lt, M, D> AsRef<[D]> for Mbuf<'lt, M, D> {
+    fn as_ref(&self) -> &[D] {
+        self
+    }
+}
+
+impl<'lt, M, D> AsMut<[D]> for Mbuf<'lt, M, D> {
+    fn as_mut(&mut self) -> &mut [D] {
+        self
+    }
+}
+
 impl<'lt, M, D> std::ops::Deref for Mbuf<'lt, M, D> {
     type Target = [D];
 
