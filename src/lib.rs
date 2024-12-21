@@ -22,6 +22,10 @@ impl<'lt, M, D> Mbuf<'lt, M, D> {
         std::mem::replace(&mut self.metadata, metadata)
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     pub fn len(&self) -> usize {
         self.length
     }
