@@ -1,14 +1,14 @@
 [package]
 name = "ps-mbuf"
-description = "memory buffers for memory maps"
 version = "0.1.0-4"
 edition = "2021"
+description = "memory buffers for memory maps"
 license = "GPL-3.0-or-later"
+
+[dependencies]
 
 [profile.dev]
 opt-level = 3
 
 [profile.release]
 opt-level = 3
-
-[dependencies]
