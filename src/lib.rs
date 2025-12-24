@@ -239,4 +239,4 @@ pub trait MbufValue {}
 
 impl<T> MbufValue for T where T: Copy {}
 
-impl<'lt, M, D> MbufValue for Mbuf<'lt, M, D> {}
+impl<M, D> MbufValue for Mbuf<'_, M, D> {}
