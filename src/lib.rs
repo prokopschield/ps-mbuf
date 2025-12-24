@@ -136,7 +136,6 @@ impl<'lt, M: MbufValue, D: Copy> Mbuf<'lt, M, D> {
     /// - `pointer` must point to writable memory large enough to hold the `Mbuf` header plus `data.len()` elements of type `D`.
     /// - `pointer` must be aligned as an `Mbuf<'lt, M, D>`.
     /// - The entire buffer region must be valid for the lifetime `'lt`.
-    #[must_use]
     pub unsafe fn write_to_ptr(pointer: *mut u8, metadata: M, data: &[D]) -> &'lt Self {
         Mbuf::write_to_ptr_mut(pointer, metadata, data)
     }
