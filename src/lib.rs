@@ -80,6 +80,23 @@ impl<'lt, M: Copy, D: Copy> Mbuf<'lt, M, D> {
 
         mbuf
     }
+
+    /// Declares a memory buffer **without data initialization**.
+    ///
+    /// # Safety
+    ///
+    /// - The memory region at `pointer.add(offset)` must be large enough to hold an `Mbuf<'lt, M, D>` and is writable.
+    /// - The entire region `[pointer, pointer + offset + sizeof(Mbuf))` must be valid for the lifetime `'lt`.
+    ///
+    /// **Calling this function does not initialize data values in the `Mbuf`.**
+    pub unsafe fn init_at_offset(
+        pointer: *mut u8,
+        offset: usize,
+        metadata: M,
+        length: usize,
+    ) -> &'lt mut Self {
+        Self::init_at_ptr(pointer.add(offset), metadata, length)
+    }
 }
 
 impl<'lt, M: Copy, D: Copy> Mbuf<'lt, M, D> {
