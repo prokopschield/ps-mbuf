@@ -16,7 +16,7 @@ pub struct Mbuf<'lt, M, D> {
     _marker: std::marker::PhantomData<&'lt D>,
 }
 
-impl<M: Copy, D: Copy> Mbuf<'_, M, D> {
+impl<M: MbufValue, D: MbufValue> Mbuf<'_, M, D> {
     /// Returns an immutable slice view of the buffer data.
     pub fn to_slice(&self) -> &[D] {
         self
@@ -48,7 +48,7 @@ impl<M: Copy, D: Copy> Mbuf<'_, M, D> {
     }
 }
 
-impl<'lt, M: Copy, D: Copy> Mbuf<'lt, M, D> {
+impl<'lt, M: MbufValue, D: MbufValue> Mbuf<'lt, M, D> {
     /// Interprets a pointer as an `Mbuf` with immutable access.
     ///
     /// # Safety
@@ -128,7 +128,7 @@ impl<'lt, M: Copy, D: Copy> Mbuf<'lt, M, D> {
     }
 }
 
-impl<'lt, M: Copy, D: Copy> Mbuf<'lt, M, D> {
+impl<'lt, M: MbufValue, D: Copy> Mbuf<'lt, M, D> {
     /// Initializes an `Mbuf` at a pointer and copies data into it.
     ///
     /// # Safety
@@ -189,19 +189,19 @@ impl<'lt, M: Copy, D: Copy> Mbuf<'lt, M, D> {
     }
 }
 
-impl<M: Copy, D: Copy> AsRef<[D]> for Mbuf<'_, M, D> {
+impl<M: MbufValue, D: MbufValue> AsRef<[D]> for Mbuf<'_, M, D> {
     fn as_ref(&self) -> &[D] {
         self
     }
 }
 
-impl<M: Copy, D: Copy> AsMut<[D]> for Mbuf<'_, M, D> {
+impl<M: MbufValue, D: MbufValue> AsMut<[D]> for Mbuf<'_, M, D> {
     fn as_mut(&mut self) -> &mut [D] {
         self
     }
 }
 
-impl<M: Copy, D: Copy> std::ops::Deref for Mbuf<'_, M, D> {
+impl<M: MbufValue, D: MbufValue> std::ops::Deref for Mbuf<'_, M, D> {
     type Target = [D];
 
     fn deref(&self) -> &Self::Target {
@@ -212,7 +212,7 @@ impl<M: Copy, D: Copy> std::ops::Deref for Mbuf<'_, M, D> {
     }
 }
 
-impl<M: Copy, D: Copy> std::ops::DerefMut for Mbuf<'_, M, D> {
+impl<M: MbufValue, D: MbufValue> std::ops::DerefMut for Mbuf<'_, M, D> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         let ptr: *const Self = self;
         let address = ptr as usize + std::mem::size_of::<Self>();
@@ -234,3 +234,9 @@ const fn align<T>(address: usize) -> *const T {
         (address + align_size - remainder) as *const T
     }
 }
+
+pub trait MbufValue {}
+
+impl<T> MbufValue for T where T: Copy {}
+
+impl<'lt, M, D> MbufValue for Mbuf<'lt, M, D> {}
