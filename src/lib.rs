@@ -5,7 +5,7 @@ pub struct Mbuf<'lt, M, D> {
     _marker: std::marker::PhantomData<&'lt D>,
 }
 
-impl<'lt, M, D> Mbuf<'lt, M, D> {
+impl<M: Copy, D: Copy> Mbuf<'_, M, D> {
     pub fn to_slice(&self) -> &[D] {
         self
     }
@@ -18,7 +18,7 @@ impl<'lt, M, D> Mbuf<'lt, M, D> {
         &self.metadata
     }
 
-    pub fn set_metadata(&mut self, metadata: M) -> M {
+    pub const fn set_metadata(&mut self, metadata: M) -> M {
         std::mem::replace(&mut self.metadata, metadata)
     }
 
@@ -31,7 +31,7 @@ impl<'lt, M, D> Mbuf<'lt, M, D> {
     }
 }
 
-impl<'lt, M, D> Mbuf<'lt, M, D> {
+impl<'lt, M: Copy, D: Copy> Mbuf<'lt, M, D> {
     /// Declares an Mbuf begins at a given pointer
     /// # Safety
     /// Safe only if the pointer points to a valid Mbuf<'lt, M, D>.
@@ -70,7 +70,6 @@ impl<'lt, M, D> Mbuf<'lt, M, D> {
     /// # Safety
     /// Safe if the memory region pointed to is large enough to hold an Mbuf<'lt, M, D> and is writable.
     /// <br>**Calling this function does not initialize data values in the Mbuf.**
-    /// <br>**Dropping uninitialized data values may be undefined behaviour.**
     /// <br>Don't do this unless you know what you're doing.
     /// - The memory region at `pointer` must outlive the returned `&Mbuf`.
     pub unsafe fn init_at_ptr(pointer: *mut u8, metadata: M, length: usize) -> &'lt mut Self {
@@ -83,7 +82,7 @@ impl<'lt, M, D> Mbuf<'lt, M, D> {
     }
 }
 
-impl<'lt, M, D: Copy> Mbuf<'lt, M, D> {
+impl<'lt, M: Copy, D: Copy> Mbuf<'lt, M, D> {
     /// Declares an Mbuf at `pointer` and copies `metadata` and `data` into it.
     /// # Safety
     /// - `pointer` must point to a large enough place in memory to hold `metadata` + `usize` + `data`.
@@ -139,19 +138,19 @@ impl<'lt, M, D: Copy> Mbuf<'lt, M, D> {
     }
 }
 
-impl<'lt, M, D> AsRef<[D]> for Mbuf<'lt, M, D> {
+impl<M: Copy, D: Copy> AsRef<[D]> for Mbuf<'_, M, D> {
     fn as_ref(&self) -> &[D] {
         self
     }
 }
 
-impl<'lt, M, D> AsMut<[D]> for Mbuf<'lt, M, D> {
+impl<M: Copy, D: Copy> AsMut<[D]> for Mbuf<'_, M, D> {
     fn as_mut(&mut self) -> &mut [D] {
         self
     }
 }
 
-impl<'lt, M, D> std::ops::Deref for Mbuf<'lt, M, D> {
+impl<M: Copy, D: Copy> std::ops::Deref for Mbuf<'_, M, D> {
     type Target = [D];
 
     fn deref(&self) -> &Self::Target {
@@ -164,7 +163,7 @@ impl<'lt, M, D> std::ops::Deref for Mbuf<'lt, M, D> {
     }
 }
 
-impl<'lt, M, D> std::ops::DerefMut for Mbuf<'lt, M, D> {
+impl<M: Copy, D: Copy> std::ops::DerefMut for Mbuf<'_, M, D> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         unsafe {
             let address =
