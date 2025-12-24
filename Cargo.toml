@@ -1,6 +1,6 @@
 [package]
 name = "ps-mbuf"
-version = "0.1.0-6"
+version = "0.1.0-7"
 edition = "2021"
 description = "memory buffers for memory maps"
 license = "GPL-3.0-or-later"
