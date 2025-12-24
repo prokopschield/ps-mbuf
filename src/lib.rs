@@ -6,6 +6,9 @@
 /// 3. Data elements of type `D` stored directly after in memory
 ///
 /// The buffer dereferences to `&[D]` via pointer arithmetic aligned to the data region.
+///
+/// **Important:** The data region must be allocated contiguously in memory immediately after this struct.
+/// Callers are responsible for upholding this invariant.
 #[repr(C)]
 pub struct Mbuf<'lt, M, D> {
     metadata: M,
