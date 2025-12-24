@@ -202,23 +202,19 @@ impl<M: Copy, D: Copy> std::ops::Deref for Mbuf<'_, M, D> {
     type Target = [D];
 
     fn deref(&self) -> &Self::Target {
-        unsafe {
-            let address =
-                std::ptr::from_ref::<usize>(&self.length) as usize + std::mem::size_of::<usize>();
+        let ptr: *const Self = self;
+        let address = ptr as usize + std::mem::size_of::<Self>();
 
-            std::slice::from_raw_parts(align::<D>(address), self.length)
-        }
+        unsafe { std::slice::from_raw_parts(align::<D>(address), self.length) }
     }
 }
 
 impl<M: Copy, D: Copy> std::ops::DerefMut for Mbuf<'_, M, D> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        unsafe {
-            let address =
-                std::ptr::from_ref::<usize>(&self.length) as usize + std::mem::size_of::<usize>();
+        let ptr: *const Self = self;
+        let address = ptr as usize + std::mem::size_of::<Self>();
 
-            std::slice::from_raw_parts_mut(align::<D>(address).cast_mut(), self.length)
-        }
+        unsafe { std::slice::from_raw_parts_mut(align::<D>(address).cast_mut(), self.length) }
     }
 }
 
