@@ -1,3 +1,11 @@
+/// A memory buffer with associated metadata.
+///
+/// `Mbuf` is a fixed memory layout consisting of:
+/// 1. Metadata of type `M`
+/// 2. A `usize` length field
+/// 3. Data elements of type `D` stored directly after in memory
+///
+/// The buffer dereferences to `&[D]` via pointer arithmetic aligned to the data region.
 #[repr(C)]
 pub struct Mbuf<'lt, M, D> {
     metadata: M,
@@ -6,72 +14,89 @@ pub struct Mbuf<'lt, M, D> {
 }
 
 impl<M: Copy, D: Copy> Mbuf<'_, M, D> {
+    /// Returns an immutable slice view of the buffer data.
     pub fn to_slice(&self) -> &[D] {
         self
     }
 
+    /// Returns a mutable slice view of the buffer data.
     pub fn to_slice_mut(&mut self) -> &mut [D] {
         &mut *self
     }
 
+    /// Returns a reference to the metadata.
     pub const fn get_metadata(&self) -> &M {
         &self.metadata
     }
 
+    /// Sets the metadata and returns the previous value.
     pub const fn set_metadata(&mut self, metadata: M) -> M {
         std::mem::replace(&mut self.metadata, metadata)
     }
 
+    /// Returns `true` if the buffer is empty.
     pub const fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
+    /// Returns the number of elements in the buffer.
     pub const fn len(&self) -> usize {
         self.length
     }
 }
 
 impl<'lt, M: Copy, D: Copy> Mbuf<'lt, M, D> {
-    /// Declares an Mbuf begins at a given pointer
+    /// Interprets a pointer as an `Mbuf` with immutable access.
+    ///
     /// # Safety
-    /// Safe only if the pointer points to a valid Mbuf<'lt, M, D>.
-    /// - The memory region at `pointer` must outlive the returned `&Mbuf`.
+    ///
+    /// - `pointer` must point to a valid, initialized `Mbuf<'lt, M, D>`.
+    /// - The `Mbuf` and its data must be valid for the lifetime `'lt`.
     #[must_use]
     pub const unsafe fn at_ptr(pointer: *const u8) -> &'lt Self {
         &*pointer.cast::<Mbuf<'lt, M, D>>()
     }
 
-    /// Declares a mutable Mbuf begins at a given pointer
+    /// Interprets a pointer as an `Mbuf` with mutable access.
+    ///
     /// # Safety
-    /// Safe only if the pointer points to a valid Mbuf<'lt, M, D> in writable memory.
-    /// - The memory region at `pointer` must outlive the returned `&Mbuf`.
+    ///
+    /// - `pointer` must point to a valid, initialized `Mbuf<'lt, M, D>` in writable memory.
+    /// - The `Mbuf` and its data must be valid for the lifetime `'lt`.
     pub unsafe fn at_ptr_mut(pointer: *mut u8) -> &'lt mut Self {
         &mut *pointer.cast::<Mbuf<'lt, M, D>>()
     }
 
-    /// Declares an Mbuf begins at a given byte offset from a given pointer
+    /// Interprets a byte offset from a pointer as an `Mbuf` with immutable access.
+    ///
     /// # Safety
-    /// Safe only if the the region at (pointer + offset) contains a valid Mbuf<'lt, M, D>.
-    /// - The memory region at `pointer` must outlive the returned `&Mbuf`.
+    ///
+    /// - `pointer.add(offset)` must point to a valid, initialized `Mbuf<'lt, M, D>`.
+    /// - The `Mbuf` and its data must be valid for the lifetime `'lt`.
     #[must_use]
     pub const unsafe fn at_offset(pointer: *const u8, offset: usize) -> &'lt Self {
         &*(pointer.add(offset)).cast::<Mbuf<'lt, M, D>>()
     }
 
-    /// Declares a mutable Mbuf begins at a given byte offset from a given pointer
+    /// Interprets a byte offset from a pointer as an `Mbuf` with mutable access.
+    ///
     /// # Safety
-    /// Safe only if the the region at (pointer + offset) contains a valid Mbuf<'lt, M, D> in writable memory.
-    /// - The memory region at `pointer` must outlive the returned `&Mbuf`.
+    ///
+    /// - `pointer.add(offset)` must point to a valid, initialized `Mbuf<'lt, M, D>` in writable memory.
+    /// - The `Mbuf` and its data must be valid for the lifetime `'lt`.
     pub unsafe fn at_offset_mut(pointer: *mut u8, offset: usize) -> &'lt mut Self {
         &mut *(pointer.add(offset)).cast::<Mbuf<'lt, M, D>>()
     }
 
-    /// declares a memory buffer **without data initialization -- items must be initialized by caller**
+    /// Initializes an `Mbuf` at a pointer without initializing data.
+    ///
+    /// Sets the metadata and length fields. **The caller must initialize the data region before access.**
+    ///
     /// # Safety
-    /// Safe if the memory region pointed to is large enough to hold an Mbuf<'lt, M, D> and is writable.
-    /// <br>**Calling this function does not initialize data values in the Mbuf.**
-    /// <br>Don't do this unless you know what you're doing.
-    /// - The memory region at `pointer` must outlive the returned `&Mbuf`.
+    ///
+    /// - `pointer` must point to writable memory large enough to hold `Mbuf<'lt, M, D>` plus `length` elements of type `D`.
+    /// - `pointer` must be aligned as an `Mbuf<'lt, M, D>`.
+    /// - The entire buffer region must be valid for the lifetime `'lt`.
     pub unsafe fn init_at_ptr(pointer: *mut u8, metadata: M, length: usize) -> &'lt mut Self {
         let mbuf = Mbuf::at_ptr_mut(pointer);
 
@@ -81,14 +106,15 @@ impl<'lt, M: Copy, D: Copy> Mbuf<'lt, M, D> {
         mbuf
     }
 
-    /// Declares a memory buffer **without data initialization**.
+    /// Initializes an `Mbuf` at a byte offset from a pointer without initializing data.
+    ///
+    /// Sets the metadata and length fields. **The caller must initialize the data region before access.**
     ///
     /// # Safety
     ///
-    /// - The memory region at `pointer.add(offset)` must be large enough to hold an `Mbuf<'lt, M, D>` and is writable.
-    /// - The entire region `[pointer, pointer + offset + sizeof(Mbuf))` must be valid for the lifetime `'lt`.
-    ///
-    /// **Calling this function does not initialize data values in the `Mbuf`.**
+    /// - `pointer.add(offset)` must point to writable memory large enough to hold `Mbuf<'lt, M, D>` plus `length` elements of type `D`.
+    /// - `pointer.add(offset)` must be aligned as an `Mbuf<'lt, M, D>`.
+    /// - The entire buffer region must be valid for the lifetime `'lt`.
     pub unsafe fn init_at_offset(
         pointer: *mut u8,
         offset: usize,
@@ -100,22 +126,25 @@ impl<'lt, M: Copy, D: Copy> Mbuf<'lt, M, D> {
 }
 
 impl<'lt, M: Copy, D: Copy> Mbuf<'lt, M, D> {
-    /// Declares an Mbuf at `pointer` and copies `metadata` and `data` into it.
+    /// Initializes an `Mbuf` at a pointer and copies data into it.
+    ///
     /// # Safety
-    /// - `pointer` must point to a large enough place in memory to hold `metadata` + `usize` + `data`.
-    /// - `pointer` must be aligned to at least `usize` and at least `M`.
-    /// - The memory region at `pointer` must outlive the returned `&Mbuf`.
-    /// - The memory region at `pointer` must be writable
+    ///
+    /// - `pointer` must point to writable memory large enough to hold the `Mbuf` header plus `data.len()` elements of type `D`.
+    /// - `pointer` must be aligned as an `Mbuf<'lt, M, D>`.
+    /// - The entire buffer region must be valid for the lifetime `'lt`.
+    #[must_use]
     pub unsafe fn write_to_ptr(pointer: *mut u8, metadata: M, data: &[D]) -> &'lt Self {
         Mbuf::write_to_ptr_mut(pointer, metadata, data)
     }
 
-    /// Declares a mutable Mbuf at `pointer` and copies `metadata` and `data` into it.
+    /// Initializes a mutable `Mbuf` at a pointer and copies data into it.
+    ///
     /// # Safety
-    /// - `pointer` must point to a large enough place in memory to hold `metadata` + `usize` + `data`.
-    /// - `pointer` must be aligned to at least `usize` and at least `M`.
-    /// - The memory region at `pointer` must outlive the returned `&Mbuf`.
-    /// - The memory region at `pointer` must be writable
+    ///
+    /// - `pointer` must point to writable memory large enough to hold the `Mbuf` header plus `data.len()` elements of type `D`.
+    /// - `pointer` must be aligned as an `Mbuf<'lt, M, D>`.
+    /// - The entire buffer region must be valid for the lifetime `'lt`.
     pub unsafe fn write_to_ptr_mut(pointer: *mut u8, metadata: M, data: &[D]) -> &'lt mut Self {
         let mbuf = Mbuf::init_at_ptr(pointer, metadata, data.len());
 
@@ -124,12 +153,13 @@ impl<'lt, M: Copy, D: Copy> Mbuf<'lt, M, D> {
         mbuf
     }
 
-    /// Declares an Mbuf at `pointer + offset` and copies `metadata` and `data` into it.
+    /// Initializes an `Mbuf` at a byte offset from a pointer and copies data into it.
+    ///
     /// # Safety
-    /// - `pointer` must point to a large enough place in memory to hold `metadata` + `usize` + `data`.
-    /// - `pointer` must be aligned to at least `usize` and at least `M`.
-    /// - The memory region at `pointer` must outlive the returned `&Mbuf`.
-    /// - The memory region at `pointer` must be writable
+    ///
+    /// - `pointer.add(offset)` must point to writable memory large enough to hold the `Mbuf` header plus `data.len()` elements of type `D`.
+    /// - `pointer.add(offset)` must be aligned as an `Mbuf<'lt, M, D>`.
+    /// - The entire buffer region must be valid for the lifetime `'lt`.
     pub unsafe fn write_to_offset(
         pointer: *mut u8,
         offset: usize,
@@ -139,12 +169,13 @@ impl<'lt, M: Copy, D: Copy> Mbuf<'lt, M, D> {
         Mbuf::write_to_offset_mut(pointer, offset, metadata, data)
     }
 
-    /// Declares a mutable Mbuf at `pointer + offset` and copies `metadata` and `data` into it.
+    /// Initializes a mutable `Mbuf` at a byte offset from a pointer and copies data into it.
+    ///
     /// # Safety
-    /// - `pointer` must point to a large enough place in memory to hold `metadata` + `usize` + `data`.
-    /// - `pointer` must be aligned to at least `usize` and at least `M`.
-    /// - The memory region at `pointer` must outlive the returned `&Mbuf`.
-    /// - The memory region at `pointer` must be writable
+    ///
+    /// - `pointer.add(offset)` must point to writable memory large enough to hold the `Mbuf` header plus `data.len()` elements of type `D`.
+    /// - `pointer.add(offset)` must be aligned as an `Mbuf<'lt, M, D>`.
+    /// - The entire buffer region must be valid for the lifetime `'lt`.
     pub unsafe fn write_to_offset_mut(
         pointer: *mut u8,
         offset: usize,
@@ -191,6 +222,9 @@ impl<M: Copy, D: Copy> std::ops::DerefMut for Mbuf<'_, M, D> {
     }
 }
 
+/// Aligns an address up to the required alignment for type `T`.
+///
+/// Returns the aligned address as a const pointer. If already aligned, returns unchanged.
 const fn align<T>(address: usize) -> *const T {
     let align_size = std::mem::align_of::<T>();
     let remainder = address % align_size;
